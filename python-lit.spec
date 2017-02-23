@@ -1,6 +1,16 @@
-Name: python-lit
+%global srcname lit
+
+%if 0%{?fedora}
+%global with_python3 1
+%endif
+
+# FIXME: Work around for rhel not having py2_build/py2_install macro.
+%{!?py2_build: %global py2_build %{expand: CFLAGS="%{optflags}" %{__python2} setup.py %{?py_setup_args} build --executable="%{__python2} -s"}}
+%{!?py2_install: %global py2_install %{expand: CFLAGS="%{optflags}" %{__python2} setup.py %{?py_setup_args} install -O1 --skip-build --root %{buildroot}}}
+
+Name: python-%{srcname}
 Version: 0.5.0
-Release: 0%{?dist}
+Release: 1%{?dist}
 BuildArch: noarch
 
 License: NCSA
@@ -10,80 +20,67 @@ URL: https://pypi.python.org/pypi/lit
 Source0: https://pypi.python.org/packages/5b/a0/dbed2c8dfb220eb9a5a893257223cd0ff791c0fbc34ce2f1a957fa4b6c6f/lit-0.5.0.tar.gz
 
 BuildRequires: python2-devel
-BuildRequires: python2-setuptools
-
+BuildRequires: python-setuptools
 %if 0%{?with_python3}
 BuildRequires: python3-devel
-BuildRequires: python3-setuptools
-%endif # if with_python3
+%endif
 
 %description
 lit is a tool used by the LLVM project for executing its test suites.
+
+%package -n python2-lit
+Summary: lit test runner for Python 2
+Group: Development/Languages
 
 %if 0%{?with_python3}
 %package -n python3-lit
 Summary: lit test runner for Python 3
 Group: Development/Languages
+%endif
 
-%description -n python3-lit
+%description -n python2-lit
 lit is a tool used by the LLVM project for executing its test suites.
 
-%endif # with_python3
+%if 0%{?with_python3}
+%description -n python3-lit
+lit is a tool used by the LLVM project for executing its test suites.
+%endif
 
 %prep
-%autosetup -n lit-%{version}
-
-%if 0%{?with_python3}
-rm -rf %{py3dir}
-cp -a . %{py3dir}
-%endif # with_python3
+%autosetup -n %{srcname}-%{version}
 
 %build
-%{__python} setup.py build
-
+%py2_build
 %if 0%{?with_python3}
-pushd %{py3dir}
-%{__python3} setup.py build
-popd
-%endif # with_python3
-
+%py3_build
+%endif
 
 %install
-rm -rf %{buildroot}
-
+%py2_install
 %if 0%{?with_python3}
-pushd %{py3dir}
-%{__python3} setup.py install --skip-build --root %{buildroot}
-mv %{buildroot}/%{_bindir}/lit %{buildroot}/%{_bindir}/python3-lit
-popd
-%endif # with_python3
-
-%{__python} setup.py install --skip-build --root %{buildroot}
+%py3_install
+%endif
 
 %check
-python2 setup.py test
-
+%{__python2} setup.py test
+%if 0%{?with_python3}
 # FIXME: Tests fail with python3
-#%if 0%{?with_python3}
-#pushd %{py3dir}
-#python3 setup.py test
-#popd
-#%endif
+#%{__python3} setup.py test
+%endif
 
 %clean
 rm -rf %{buildroot}
 
-
-%files
-%defattr(-,root,root,-)
+%files -n python2-%{srcname}
 %doc README.txt
+%{python2_sitelib}/*
 %{_bindir}/lit
-%{python_sitelib}/*
 
 %if 0%{?with_python3}
-%files -n python3-lit
-%defattr(-,root,root,-)
+%files -n python3-%{srcname}
 %doc README.txt
-%{_bindir}/python3-lit
 %{python3_sitelib}/*
+%{_bindir}/lit
 %endif
+
+%changelog
