@@ -29,12 +29,12 @@ BuildRequires: python3-devel
 lit is a tool used by the LLVM project for executing its test suites.
 
 %package -n python2-lit
-Summary: lit test runner for Python 2
+Summary: LLVM lit test runner for Python 2
 Group: Development/Languages
 
 %if 0%{?with_python3}
 %package -n python3-lit
-Summary: lit test runner for Python 3
+Summary: LLVM lit test runner for Python 3
 Group: Development/Languages
 %endif
 
@@ -61,11 +61,15 @@ lit is a tool used by the LLVM project for executing its test suites.
 %py3_install
 %endif
 
+# Strip out #!/usr/bin/env python
+sed -i -e '1{\@^#!/usr/bin/env python@d}' %{buildroot}%{python2_sitelib}/%{srcname}/*.py
+sed -i -e '1{\@^#!/usr/bin/env python@d}' %{buildroot}%{python3_sitelib}/%{srcname}/*.py
+
 %check
 %{__python2} setup.py test
 %if 0%{?with_python3}
 # FIXME: Tests fail with python3
-#%{__python3} setup.py test
+#{__python3} setup.py test
 %endif
 
 %clean
@@ -74,7 +78,9 @@ rm -rf %{buildroot}
 %files -n python2-%{srcname}
 %doc README.txt
 %{python2_sitelib}/*
+%if %{undefined with_python3}
 %{_bindir}/lit
+%endif
 
 %if 0%{?with_python3}
 %files -n python3-%{srcname}
@@ -84,3 +90,5 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Mar 09 2017 Tom Stellard <tstellar@redhat.com> - 0.5.0-1
+- Initial version
